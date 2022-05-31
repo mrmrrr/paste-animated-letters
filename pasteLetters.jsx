@@ -1,4 +1,4 @@
-﻿function getItem(itemName){
+function getItem(itemName){
     for(var i=1; i<=app.project.numItems; i++){
         if(app.project.item(i).name.indexOf(itemName) !=-1){
             return app.project.item(i);
@@ -17,31 +17,58 @@ function getItemInFolder(itemName, folder){
     return null;
 }
 ;
-
+var folderNames = [];
 var comp = app.project.activeItem;
 var myWindow = new Window ("palette", "Text Placer");
-var myInputGroup = myWindow.add("group");
-myInputGroup.alignment = "left";
-var myText = myInputGroup.add ("edittext", undefined);
-myText.text = 'Your text';
+
+myWindow.orientation = "column";
+var mainGroup = myWindow.add("group");
+mainGroup.orientation = "row";
+
+var col1 = mainGroup.add("group");
+col1.orientation = "column";
+col1.alignChildren = ["left","center"];
+var col2 = mainGroup.add("group");
+col2.orientation = "column";
+col2.alignChildren = ["left","center"];
+var col3 = mainGroup.add("group");
+col3.orientation = "column";
+col3.alignChildren = ["left","center"];
+
+var staticText1 = col1.add("statictext", undefined, undefined, {name: "statictext1"});
+staticText1.text = "Your Text :";
+staticText1.justify ="left";
+var myText = col1.add ("edittext", undefined);
 myText.characters = 10;
 myText.active = true;
 
-var myFolder = myInputGroup.add ("edittext", undefined);
-myFolder.text = 'Folder name with letters';
-myFolder.characters = 10;
-
-var myPrefix = myInputGroup.add ("edittext", undefined);
-myPrefix.text = 'Prefix in comp name';
+var staticText2 = col2.add("statictext", undefined, undefined, {name: "statictext2"});
+staticText2.text = "Comp Prefix :";
+staticText2.justify ="left";
+var myPrefix = col2.add ("edittext", undefined);
 myPrefix.characters = 10;
+
+var staticText3 = col3.add("statictext", undefined, undefined, {name: "statictext3"});
+staticText3.text = "Folder :";
+staticText3.justify ="left";
+dropdownList();
+var myDropdown = col3.add ("dropdownlist", undefined, folderNames);
+
+function dropdownList(){
+    for(i=1;i<app.project.numItems;i++){
+        if(app.project.items[i] instanceof FolderItem)
+            folderNames.push(app.project.items[i].name);
+    };
+}
+;
 
 var myButtonGroup = myWindow.add("group");
 myButtonGroup.alignment = "left";
-var btnOk = myButtonGroup.add ("button", undefined, "OK");
-var btnCancel = myButtonGroup.add ("button", undefined, "Cancel");
+var btnOk = myButtonGroup.add ("button", undefined, "Paste");
 var btnBreak = myButtonGroup.add ("button", undefined, "Break");
 var INDEX_ARR = [];
 var count=0;
+
 
 btnBreak.onClick = function(){
         app.beginUndoGroup("BREAK EXPRESSION");
@@ -89,95 +116,65 @@ btnOk.onClick = function(){
     app.beginUndoGroup("PASTE LETTERS");
     if(count==0){
         count=count+1;
-        
         var nullLayer = comp.layers.addNull(app.project.activeItem.duration);
         var myTextString = myText.text.toString().toUpperCase();
         var nullName = myTextString;
-        var b = 200;
-        nullLayer.transform.position.setValue([b,300+(getItemInFolder (myTextString.charAt(1) , getItem (myFolder.text)).height/2)]);
+        nullLayer.transform.position.setValue([0, getItemInFolder(myTextString.charAt(1), getItem(myDropdown.selection.text)).height]);
         nullLayer.source.name =nullName;
         comp.layer(myTextString).property("ADBE Effect Parade").addProperty("ADBE Slider Control");
-        var mW = 0;
-        var gapBefore = 0;
         
         for (var i = 0; i<myTextString.length; i++){
             
             if(i==0){
-                var selectedComp = getItemInFolder(myPrefix.text+myTextString.charAt(i), getItem (myFolder.text));
-                var compWidth = selectedComp.width;
-                var gapComp = (compWidth/2)
-
-                var posComp = getItem (comp.name).layers.add(selectedComp);
-                posComp.transform.position.setValue([gapComp+mW, 300]);
+                var selectedComp = getItemInFolder(myPrefix.text+myTextString.charAt(i), getItem(myDropdown.selection.text));
+                var posComp = getItem(comp.name).layers.add(selectedComp);
+                posComp.transform.position.setValue([selectedComp.width/2, selectedComp.height/2]);
                 posComp.parent = nullLayer;
-                mW=mW+(selectedComp.width/4);
-                gapBefore = gapBefore+gapComp;   
                 continue;
             }
             var firstLayer = myPrefix.text+myTextString.charAt(0);
-            
             var FirstX = comp.layer(firstLayer).property("ADBE Transform Group").property("ADBE Position").value[0];
+            var selectedComp = getItemInFolder(myPrefix.text+myTextString.charAt(i), getItem(myDropdown.selection.text));
+            var posComp = getItem(comp.name).layers.add(selectedComp);
             
-            var selectedComp = getItemInFolder(myPrefix.text+myTextString.charAt(i), getItem (myFolder.text));
-            var compWidth = selectedComp.width;
-            var gapComp = (compWidth/2)
-            var posComp = getItem (comp.name).layers.add(selectedComp);
-            
-            posComp.transform.position.setValue([gapComp+mW, 300]);
+            posComp.transform.position.setValue([selectedComp.width/2, selectedComp.height/2]);
             posComp.parent = nullLayer;
             posComp.property("ADBE Transform Group").property("ADBE Position").expression = 
                 'temp = thisComp.layer("'+nullName+'").effect("Slider Control")("Slider");['+FirstX+'+(temp*'+i+'), value[1]];'
-            mW=mW+(selectedComp.width/4);
-            gapBefore = gapBefore+gapComp;
         };
         
     }else{
         count=count+1;
-        
         var nullLayer = comp.layers.addNull(app.project.activeItem.duration);
         var myTextString = myText.text.toString().toUpperCase();
         var nullName = myTextString+count;
-        var b = 200;
-        nullLayer.transform.position.setValue([b,300+(getItemInFolder (myTextString.charAt(1) , getItem (myFolder.text)).height/2)]);
+        nullLayer.transform.position.setValue([0, getItemInFolder(myTextString.charAt(1), getItem(myDropdown.selection.text)).height]);
         nullLayer.source.name =myTextString+count;
-        comp.layer(nullName).property("ADBE Effect Parade").addProperty("ADBE Slider Control");
-        var mW = 0;
-        var gapBefore = 0;
+        comp.layer(nullLayer.name).property("ADBE Effect Parade").addProperty("ADBE Slider Control");
         
         for (var i = 0; i<myTextString.length; i++){
-            
             if(i==0){
-                var selectedComp = getItemInFolder(myPrefix.text+myTextString.charAt(i), getItem (myFolder.text));
-                var compWidth = selectedComp.width;
-                var gapComp = (compWidth/2)
-
-                var posComp = getItem (comp.name).layers.add(selectedComp);
-                posComp.transform.position.setValue([gapComp+mW, 300]);
+                var selectedComp = getItemInFolder(myPrefix.text+myTextString.charAt(i), getItem(myDropdown.selection.text));
+                var posComp = getItem(comp.name).layers.add(selectedComp);
+                posComp.transform.position.setValue([selectedComp.width/2, selectedComp.height/2]);
                 posComp.parent = nullLayer;
-                mW=mW+(selectedComp.width/4);
-                gapBefore = gapBefore+gapComp;   
                 continue;
             }
             var firstLayer = myPrefix.text+myTextString.charAt(0);
             
             var FirstX = comp.layer(firstLayer).property("ADBE Transform Group").property("ADBE Position").value[0];
             
-            var selectedComp = getItemInFolder(myPrefix.text+myTextString.charAt(i), getItem (myFolder.text));
-            var compWidth = selectedComp.width;
-            var gapComp = (compWidth/2)
-            var posComp = getItem (comp.name).layers.add(selectedComp);
+            var selectedComp = getItemInFolder(myPrefix.text+myTextString.charAt(i), getItem(myDropdown.selection.text));
+            var posComp = getItem(comp.name).layers.add(selectedComp);
             
-            posComp.transform.position.setValue([gapComp+mW, 300]);
+            posComp.transform.position.setValue([selectedComp.width/2, selectedComp.height/2]);
             posComp.parent = nullLayer;
             posComp.property("ADBE Transform Group").property("ADBE Position").expression = 
                 'temp = thisComp.layer("'+nullName+'").effect("Slider Control")("Slider");['+FirstX+'+(temp*'+i+'), value[1]];'
-            mW=mW+(selectedComp.width/4);
-            gapBefore = gapBefore+gapComp;
         };
     }
     app.endUndoGroup();
 }
 ;
 
-btnCancel.onClick = function(){ myWindow.close() };
 myWindow.show();
