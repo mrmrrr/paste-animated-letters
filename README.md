@@ -1,4 +1,4 @@
-[← Back to all scripts](https://github.com/mrmrrr/AE-scripts)  
+### [← Back to all scripts](https://github.com/mrmrrr/AE-scripts)  
 # Paste animated letters
 For animated fonts that have composition for each letter.  
 
